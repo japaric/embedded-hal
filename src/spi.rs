@@ -26,6 +26,38 @@ pub trait FullDuplex<Word> {
     fn send(&mut self, word: Word) -> nb::Result<(), Self::Error>;
 }
 
+/// Write (master mode)
+///
+/// # Notes
+///
+/// - It's the task of the user of this interface to manage the slave select lines
+///
+/// - The slave select line shouldn't be released before the `flush` call succeeds
+#[cfg(feature = "unproven")]
+pub trait Send<Word> {
+    /// An enumeration of SPI errors
+    type Error;
+
+    /// Sends a word to the slave
+    fn send(&mut self, word: Word) -> nb::Result<(), Self::Error>;
+
+    /// Ensures that none of the previously written words are still buffered
+    fn completed(&mut self) -> nb::Result<(), Self::Error>;
+}
+
+/// Write (master mode)
+#[cfg(feature = "unproven")]
+impl<W, E> Send<W> for FullDuplex<W, Error = E> {
+    type Error = E;
+    fn send(&mut self, word: W) -> nb::Result<(), Self::Error> {
+        self.send(word)
+    }
+
+    fn completed(&mut self) -> nb::Result<(), Self::Error> {
+        self.read().map(|_| ())
+    }
+}
+
 /// Clock polarity
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Polarity {

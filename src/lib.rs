@@ -688,6 +688,8 @@
 extern crate nb;
 
 pub mod adc;
+#[cfg(feature = "asynchronous")]
+pub mod asynchronous;
 pub mod blocking;
 pub mod capture;
 pub mod digital;

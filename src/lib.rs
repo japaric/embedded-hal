@@ -413,6 +413,7 @@ pub mod blocking;
 pub mod capture;
 pub mod digital;
 pub mod fmt;
+pub mod i2s;
 pub mod prelude;
 pub mod pwm;
 pub mod qei;

@@ -54,6 +54,22 @@
 /// #     fn wait(&mut self) -> ::nb::Result<(), Infallible> { Ok(()) }
 /// # }
 /// ```
+///
+/// If you want to use a CountDown timer as an opaque type in a HAL-based driver, you have to add
+/// some type bounds to make sure arguments passed to `start` can be used by the underlying
+/// (concrete) `CountDown::Time` type:
+/// ```rust
+/// extern crate embedded_hal as hal;
+///
+/// pub fn uses_timer<T, U>(t: &mut T)
+/// where
+///     T: hal::timer::CountDown<Time=U>,
+///     U: From<u32>,
+/// {
+///     // delay an arbitrary 1 time unit
+///     t.start(1);
+/// }
+/// ```
 pub trait CountDown {
     /// An enumeration of `CountDown` errors.
     ///

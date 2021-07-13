@@ -1,9 +1,11 @@
 //! Blocking SPI API
 
+pub use crate::errors::spi::{Error, ErrorKind};
+
 /// Blocking transfer
 pub trait Transfer<W> {
     /// Error type
-    type Error;
+    type Error: Error;
 
     /// Writes `words` to the slave. Returns the `words` received from the slave
     fn transfer<'w>(&mut self, words: &'w mut [W]) -> Result<&'w [W], Self::Error>;
@@ -12,7 +14,7 @@ pub trait Transfer<W> {
 /// Blocking write
 pub trait Write<W> {
     /// Error type
-    type Error;
+    type Error: Error;
 
     /// Writes `words` to the slave, ignoring all the incoming words
     fn write(&mut self, words: &[W]) -> Result<(), Self::Error>;
@@ -21,7 +23,7 @@ pub trait Write<W> {
 /// Blocking write (iterator version)
 pub trait WriteIter<W> {
     /// Error type
-    type Error;
+    type Error: Error;
 
     /// Writes `words` to the slave, ignoring all the incoming words
     fn write_iter<WI>(&mut self, words: WI) -> Result<(), Self::Error>
@@ -38,6 +40,7 @@ pub mod transfer {
     impl<W, S> crate::blocking::spi::Transfer<W> for S
     where
         S: Default<W>,
+        S::Error: crate::blocking::spi::Error,
         W: Clone,
     {
         type Error = S::Error;
@@ -62,6 +65,7 @@ pub mod write {
     impl<W, S> crate::blocking::spi::Write<W> for S
     where
         S: Default<W>,
+        S::Error: crate::blocking::spi::Error,
         W: Clone,
     {
         type Error = S::Error;
@@ -86,6 +90,7 @@ pub mod write_iter {
     impl<W, S> crate::blocking::spi::WriteIter<W> for S
     where
         S: Default<W>,
+        S::Error: crate::blocking::spi::Error,
         W: Clone,
     {
         type Error = S::Error;
@@ -119,7 +124,7 @@ pub enum Operation<'a, W: 'static> {
 /// as part of a single SPI transaction
 pub trait Transactional<W: 'static> {
     /// Associated error type
-    type Error;
+    type Error: Error;
 
     /// Execute the provided transactions
     fn exec<'a>(&mut self, operations: &mut [Operation<'a, W>]) -> Result<(), Self::Error>;
@@ -127,7 +132,7 @@ pub trait Transactional<W: 'static> {
 
 /// Blocking transactional impl over spi::Write and spi::Transfer
 pub mod transactional {
-    use super::{Operation, Transfer, Write};
+    use super::{Error, Operation, Transfer, Write};
 
     /// Default implementation of `blocking::spi::Transactional<W>` for implementers of
     /// `spi::Write<W>` and `spi::Transfer<W>`
@@ -136,6 +141,7 @@ pub mod transactional {
     impl<W: 'static, E, S> super::Transactional<W> for S
     where
         S: self::Default<W> + Write<W, Error = E> + Transfer<W, Error = E>,
+        E: Error,
         W: Copy + Clone,
     {
         type Error = E;

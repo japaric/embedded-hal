@@ -1,5 +1,7 @@
 //! Serial Peripheral Interface
 
+pub use crate::errors::spi::{Error, ErrorKind};
+
 /// Full duplex (master mode)
 ///
 /// # Notes
@@ -18,7 +20,7 @@
 /// `Word` types to allow operation in both modes.
 pub trait FullDuplex<Word> {
     /// An enumeration of SPI errors
-    type Error;
+    type Error: Error;
 
     /// Reads the word stored in the shift register
     ///

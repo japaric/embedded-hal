@@ -22,13 +22,21 @@
 //! Here is an example of an embedded-hal implementation of the `Write` trait
 //! for both modes:
 //! ```
-//! # use embedded_hal::blocking::i2c::{SevenBitAddress, TenBitAddress, Write};
+//! # use embedded_hal::blocking::i2c::{Error, ErrorKind, SevenBitAddress, TenBitAddress, Write};
 //! /// I2C0 hardware peripheral which supports both 7-bit and 10-bit addressing.
 //! pub struct I2c0;
 //!
+//! # #[derive(Debug)]
+//! # pub struct I2cError;
+//! # impl Error for I2cError {
+//! #     fn kind(&self) -> ErrorKind {
+//! #         unreachable!()
+//! #     }
+//! # }
+//! #
 //! impl Write<SevenBitAddress> for I2c0
 //! {
-//! #   type Error = ();
+//! #   type Error = I2cError;
 //! #
 //!     fn write(&mut self, addr: u8, output: &[u8]) -> Result<(), Self::Error> {
 //!         // ...
@@ -38,7 +46,7 @@
 //!
 //! impl Write<TenBitAddress> for I2c0
 //! {
-//! #   type Error = ();
+//! #   type Error = I2cError;
 //! #
 //!     fn write(&mut self, addr: u16, output: &[u8]) -> Result<(), Self::Error> {
 //!         // ...
@@ -52,7 +60,7 @@
 //! For demonstration purposes the address mode parameter has been omitted in this example.
 //!
 //! ```
-//! # use embedded_hal::blocking::i2c::WriteRead;
+//! # use embedded_hal::blocking::i2c::{Error, WriteRead};
 //! const ADDR: u8  = 0x15;
 //! # const TEMP_REGISTER: u8 = 0x1;
 //! pub struct TemperatureSensorDriver<I2C> {
@@ -62,6 +70,7 @@
 //! impl<I2C, E> TemperatureSensorDriver<I2C>
 //! where
 //!     I2C: WriteRead<Error = E>,
+//!     E: Error,
 //! {
 //!     pub fn read_temperature(&mut self) -> Result<u8, E> {
 //!         let mut temp = [0];
@@ -75,7 +84,7 @@
 //! ### Device driver compatible only with 10-bit addresses
 //!
 //! ```
-//! # use embedded_hal::blocking::i2c::{TenBitAddress, WriteRead};
+//! # use embedded_hal::blocking::i2c::{Error, TenBitAddress, WriteRead};
 //! const ADDR: u16  = 0x158;
 //! # const TEMP_REGISTER: u8 = 0x1;
 //! pub struct TemperatureSensorDriver<I2C> {
@@ -85,6 +94,7 @@
 //! impl<I2C, E> TemperatureSensorDriver<I2C>
 //! where
 //!     I2C: WriteRead<TenBitAddress, Error = E>,
+//!     E: Error,
 //! {
 //!     pub fn read_temperature(&mut self) -> Result<u8, E> {
 //!         let mut temp = [0];
@@ -112,10 +122,12 @@ impl AddressMode for SevenBitAddress {}
 
 impl AddressMode for TenBitAddress {}
 
+pub use crate::errors::i2c::{Error, ErrorKind};
+
 /// Blocking read
 pub trait Read<A: AddressMode = SevenBitAddress> {
     /// Error type
-    type Error;
+    type Error: Error;
 
     /// Reads enough bytes from slave with `address` to fill `buffer`
     ///
@@ -141,7 +153,7 @@ pub trait Read<A: AddressMode = SevenBitAddress> {
 /// Blocking write
 pub trait Write<A: AddressMode = SevenBitAddress> {
     /// Error type
-    type Error;
+    type Error: Error;
 
     /// Writes bytes to slave with address `address`
     ///
@@ -165,7 +177,7 @@ pub trait Write<A: AddressMode = SevenBitAddress> {
 /// Blocking write (iterator version)
 pub trait WriteIter<A: AddressMode = SevenBitAddress> {
     /// Error type
-    type Error;
+    type Error: Error;
 
     /// Writes bytes to slave with address `address`
     ///
@@ -180,7 +192,7 @@ pub trait WriteIter<A: AddressMode = SevenBitAddress> {
 /// Blocking write + read
 pub trait WriteRead<A: AddressMode = SevenBitAddress> {
     /// Error type
-    type Error;
+    type Error: Error;
 
     /// Writes bytes to slave with address `address` and then reads enough bytes to fill `buffer` *in a
     /// single transaction*
@@ -215,7 +227,7 @@ pub trait WriteRead<A: AddressMode = SevenBitAddress> {
 /// Blocking write (iterator version) + read
 pub trait WriteIterRead<A: AddressMode = SevenBitAddress> {
     /// Error type
-    type Error;
+    type Error: Error;
 
     /// Writes bytes to slave with address `address` and then reads enough bytes to fill `buffer` *in a
     /// single transaction*
@@ -249,7 +261,7 @@ pub enum Operation<'a> {
 /// This allows combining operations within an I2C transaction.
 pub trait Transactional<A: AddressMode = SevenBitAddress> {
     /// Error type
-    type Error;
+    type Error: Error;
 
     /// Execute the provided operations on the I2C bus.
     ///
@@ -273,7 +285,7 @@ pub trait Transactional<A: AddressMode = SevenBitAddress> {
 /// This allows combining operation within an I2C transaction.
 pub trait TransactionalIter<A: AddressMode = SevenBitAddress> {
     /// Error type
-    type Error;
+    type Error: Error;
 
     /// Execute the provided operations on the I2C bus (iterator version).
     ///
@@ -304,9 +316,16 @@ pub trait TransactionalIter<A: AddressMode = SevenBitAddress> {
 /// use embedded_hal::blocking::i2c;
 ///
 /// struct I2c1;
+/// # #[derive(Debug)]
+/// # pub struct I2cError;
+/// # impl i2c::Error for I2cError {
+/// #     fn kind(&self) -> i2c::ErrorKind {
+/// #         unreachable!()
+/// #     }
+/// # }
 ///
 /// impl i2c::Transactional<i2c::SevenBitAddress> for I2c1 {
-/// #    type Error = ();
+/// #    type Error = I2cError;
 ///     fn exec<'a>(
 ///         &mut self,
 ///         address: i2c::SevenBitAddress,
@@ -327,7 +346,7 @@ pub trait TransactionalIter<A: AddressMode = SevenBitAddress> {
 /// i2c1.write(0x01, &[0xAB, 0xCD]).unwrap();
 /// ```
 pub mod transactional {
-    use super::{AddressMode, Operation, Read, Transactional, Write, WriteRead};
+    use super::{AddressMode, Error, Operation, Read, Transactional, Write, WriteRead};
 
     /// Default implementation of `blocking::i2c::Write`, `blocking::i2c::Read` and
     /// `blocking::i2c::WriteRead` traits for `blocking::i2c::Transactional` implementers.
@@ -337,6 +356,7 @@ pub mod transactional {
     where
         A: AddressMode,
         S: self::Default<A> + Transactional<A, Error = E>,
+        E: Error,
     {
         type Error = E;
 
@@ -349,6 +369,7 @@ pub mod transactional {
     where
         A: AddressMode,
         S: self::Default<A> + Transactional<A, Error = E>,
+        E: Error,
     {
         type Error = E;
 
@@ -361,6 +382,7 @@ pub mod transactional {
     where
         A: AddressMode,
         S: self::Default<A> + Transactional<A, Error = E>,
+        E: Error,
     {
         type Error = E;
 

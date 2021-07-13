@@ -322,11 +322,10 @@
 //! use nb;
 //!
 //! use hal::nb::serial::Write;
-//! use ::core::convert::Infallible;
 //!
 //! fn flush<S>(serial: &mut S, cb: &mut CircularBuffer)
 //! where
-//!     S: hal::nb::serial::Write<u8, Error = Infallible>,
+//!     S: hal::nb::serial::Write<u8, Error = SerialError>,
 //! {
 //!     loop {
 //!         if let Some(byte) = cb.peek() {
@@ -391,15 +390,22 @@
 //! # }
 //! # struct Serial1;
 //! # impl hal::nb::serial::Write<u8> for Serial1 {
-//! #   type Error = Infallible;
-//! #   fn write(&mut self, _: u8) -> nb::Result<(), Infallible> { Err(::nb::Error::WouldBlock) }
-//! #   fn flush(&mut self) -> nb::Result<(), Infallible> { Err(::nb::Error::WouldBlock) }
+//! #   type Error = SerialError;
+//! #   fn write(&mut self, _: u8) -> nb::Result<(), Self::Error> { Err(::nb::Error::WouldBlock) }
+//! #   fn flush(&mut self) -> nb::Result<(), Self::Error> { Err(::nb::Error::WouldBlock) }
 //! # }
 //! # struct CircularBuffer;
 //! # impl CircularBuffer {
 //! #   pub fn peek(&mut self) -> Option<&u8> { None }
 //! #   pub fn pop(&mut self) -> Option<u8> { None }
 //! #   pub fn push(&mut self, _: u8) -> Result<(), ()> { Ok(()) }
+//! # }
+//! # #[derive(Debug)]
+//! # pub struct SerialError;
+//! # impl hal::nb::serial::Error for SerialError {
+//! #     fn kind(&self) -> hal::nb::serial::ErrorKind {
+//! #         unreachable!()
+//! #     }
 //! # }
 //!
 //! # fn main() {}
@@ -410,6 +416,7 @@
 #![no_std]
 
 pub mod blocking;
+mod errors;
 pub mod fmt;
 pub mod nb;
 

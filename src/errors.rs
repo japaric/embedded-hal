@@ -39,6 +39,25 @@ pub mod i2c {
             *self
         }
     }
+
+    impl core::fmt::Display for ErrorKind {
+        fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+            match self {
+                Self::Bus => write!(f, "An unspecific bus error occurred"),
+                Self::ArbitrationLoss => write!(
+                    f,
+                    "The arbitration was lost, e.g. electrical problems with the clock signal"
+                ),
+                Self::NoAcknowledge => write!(f, "A bus operation was not acknowledged"),
+                Self::Overrun => write!(f, "The peripheral receive buffer was overrun"),
+                Self::Underrun => write!(f, "The peripheral send buffer ran out of data"),
+                Self::Other => write!(
+                    f,
+                    "A different error occurred. The original error may contain more information"
+                ),
+            }
+        }
+    }
 }
 
 pub mod spi {
@@ -79,6 +98,28 @@ pub mod spi {
             *self
         }
     }
+
+    impl core::fmt::Display for ErrorKind {
+        fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+            match self {
+                Self::Bus => write!(f, "An unspecific bus error occurred"),
+                Self::Overrun => write!(f, "The peripheral receive buffer was overrun"),
+                Self::ModeFault => write!(
+                    f,
+                    "Multiple devices on the SPI bus are trying across each other"
+                ),
+                Self::Crc => write!(f, "CRC does not match the received data"),
+                Self::FrameFormat => write!(
+                    f,
+                    "Received data does not conform to the peripheral configuration"
+                ),
+                Self::Other => write!(
+                    f,
+                    "A different error occurred. The original error may contain more information"
+                ),
+            }
+        }
+    }
 }
 
 pub mod serial {
@@ -116,6 +157,24 @@ pub mod serial {
     impl Error for ErrorKind {
         fn kind(&self) -> ErrorKind {
             *self
+        }
+    }
+
+    impl core::fmt::Display for ErrorKind {
+        fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+            match self {
+                Self::Overrun => write!(f, "The peripheral receive buffer was overrun"),
+                Self::Parity => write!(f, "Parity check failed"),
+                Self::Noise => write!(f, "Serial line is too noisy to read valid data"),
+                Self::FrameFormat => write!(
+                    f,
+                    "Received data does not conform to the peripheral configuration"
+                ),
+                Self::Other => write!(
+                    f,
+                    "A different error occurred. The original error may contain more information"
+                ),
+            }
         }
     }
 }

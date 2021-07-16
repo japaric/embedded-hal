@@ -67,7 +67,7 @@ pub mod spi {
         /// Multiple devices on the SPI bus are trying across each other, e.g. in a multi-master setup
         ModeFault,
         /// CRC does not match the received data
-        CrcError,
+        Crc,
         /// Received data does not conform to the peripheral configuration
         FrameFormat,
         /// A different error occurred. The original error may contain more information.

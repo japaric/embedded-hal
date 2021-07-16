@@ -1,9 +1,11 @@
 //! Blocking serial API
 
+pub use crate::errors::serial::{Error, ErrorKind};
+
 /// Write half of a serial interface (blocking variant)
 pub trait Write<Word> {
     /// The type of error that can occur when writing
-    type Error;
+    type Error: Error;
 
     /// Writes a slice, blocking until everything has been written
     ///
@@ -34,6 +36,7 @@ pub mod write {
     impl<S, Word> crate::blocking::serial::Write<Word> for S
     where
         S: Default<Word>,
+        S::Error: crate::nb::serial::Error,
         Word: Clone,
     {
         type Error = S::Error;

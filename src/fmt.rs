@@ -6,6 +6,7 @@ use core::fmt::{Result, Write};
 impl<Word, Error> Write for dyn crate::nb::serial::Write<Word, Error = Error> + '_
 where
     Word: From<u8>,
+    Error: crate::nb::serial::Error,
 {
     fn write_str(&mut self, s: &str) -> Result {
         let _ = s
